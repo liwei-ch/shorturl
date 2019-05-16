@@ -22,7 +22,7 @@ var (
 func init() {
 	//fmt.Println("mysql inited")
 	//io.EOF
-	db, err = sql.Open("mysql", "rammiah:shorturls@(rammiah.org:3306)/short_urls")
+	db, err = sql.Open("mysql", "<put your mysql url>")
 	// 连接何时关闭？
 	// defer db.Close()
 	if err != nil {
@@ -33,13 +33,10 @@ func init() {
 
 func AddRecord(url, surl string) error {
 	// 如何保证不被sql注入？？？
-	if surl == "" || strings.Contains(surl, "'") {
+	if surl == "" || strings.ContainsAny(surl, "' ") {
 		// 拒绝插入
 		return INVALID_PARAM
 	}
-	//IsEmp
-	// 两边处理一下
-	surl = "'" + surl + "'"
 	rows, err := db.Query("SELECT url FROM records WHERE surl = ?", surl)
 	if err != nil {
 		return nil
@@ -68,20 +65,16 @@ func AddRecord(url, surl string) error {
 		return RECORD_EXISTED
 	}
 
-	_, err = db.Exec("INSERT INTO records VALUE (?, ?)", surl, url)
-	if err != nil {
-		return err
-	}
-
-	//fmt.Println(res.RowsAffected())
-	return nil
+	_, err = db.Exec("INSERT INTO records(surl, url) VALUE (?, ?)", surl, url)
+	return err
 }
 
 func GetRecord(surl string) (string, error) {
-	if strings.Contains(surl, "'") {
+	// 检测参数有效性
+	if surl == "" || strings.ContainsAny(surl, "' ") {
 		return "nil", INVALID_PARAM
 	}
-	surl = "'" + surl + "'"
+	// 查询链接
 	rows, err := db.Query("SELECT url FROM records WHERE surl = ?", surl)
 
 	if err != nil {
@@ -97,6 +90,6 @@ func GetRecord(surl string) (string, error) {
 
 		return res, nil
 	}
-
+	// 查找为空
 	return "nil", NO_RECORD
 }

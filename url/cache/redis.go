@@ -14,8 +14,8 @@ var (
 func init() {
 	//fmt.Println("redis inited")
 	clnt = redis.NewClient(&redis.Options{
-		Addr:     "rammiah.org:6379",
-		Password: "wochiputaonichiputaopi",
+		Addr:     "<ip>:<port>", // put redis server  address
+		Password: "<password>",  // put redis password
 		DB:       0,
 	})
 }
@@ -38,10 +38,7 @@ func AddRecord(url, surl string) {
 		clnt.HSet(key, surl, url)
 		// 数据库中可能有
 		_, err := db.GetRecord(surl)
-		// 数据库已有
-		if err == nil {
-			return
-		} else if err == db.NO_RECORD {
+		if err == db.NO_RECORD {
 			// 插入
 			err = db.AddRecord(url, surl)
 			if err != nil {

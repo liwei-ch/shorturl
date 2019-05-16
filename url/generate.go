@@ -11,10 +11,10 @@ import (
 const (
 	_CHARS    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	_CHAR_LEN = len(_CHARS)
-	_PREFIX   = "http://rammiah.org:8080/to/"
+	_PREFIX   = "http://<ip or domain>/to/"
 )
 
-func generate(url string) (string) {
+func generate(url string) string {
 	sum := md5.New()
 	sum.Write([]byte(url))
 	code := fmt.Sprintf("%x", sum.Sum(nil))
