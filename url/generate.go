@@ -6,13 +6,28 @@ import (
 	"fmt"
 	"shorturl/url/cache"
 	"strconv"
+	"strings"
 )
 
 const (
 	_CHARS    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	_CHAR_LEN = len(_CHARS)
-	_PREFIX   = "http://<ip or domain>/to/"
 )
+
+type UrlServer struct {
+	c      *cache.Cache
+	prefix string
+}
+
+func NewUrlServer(redisAddr, redisPass, redisKey, sqlServer, prefix string, redisDbNum int) *UrlServer {
+	var server UrlServer
+	server.c = cache.NewCache(redisAddr, redisPass, redisKey, sqlServer, redisDbNum)
+	if !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+	server.prefix = prefix
+	return &server
+}
 
 func generate(url string) string {
 	sum := md5.New()
@@ -24,15 +39,14 @@ func generate(url string) string {
 		val, _ := strconv.ParseUint(code[i:i+4], 16, 32)
 		buf.WriteByte(_CHARS[val%uint64(_CHAR_LEN)])
 	}
-
-	// 放到goroutine中做
-	go cache.AddRecord(url, buf.String())
-
+	// 只产生映射后的字符串，不参与持久化
 	return buf.String()
 }
 
-func GenerateUrl(url string) string {
+func (u *UrlServer) GenerateUrl(url string) string {
 	str := generate(url)
 	//fmt.Println(str)
-	return _PREFIX + str
+	// 放到goroutine中做
+	go u.c.AddUrl(url, str)
+	return u.prefix + str
 }

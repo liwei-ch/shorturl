@@ -1,69 +1,72 @@
 package cache
 
 import (
+	"net/url"
 	"shorturl/url/db"
 
 	"github.com/go-redis/redis"
 )
 
-var (
+type Cache struct {
 	clnt *redis.Client
-	key  = "records"
-)
-
-func init() {
-	//fmt.Println("redis inited")
-	clnt = redis.NewClient(&redis.Options{
-		Addr:     "<ip>:<port>", // put redis server  address
-		Password: "<password>",  // put redis password
-		DB:       0,
-	})
+	key  string
+	db   *db.MysqlDB
 }
 
-func AddRecord(url, surl string) {
+func NewCache(addr, pass, key, sqlServer string, dbNum int) *Cache {
+	var c Cache
+	c.clnt = redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: pass,
+		DB:       dbNum,
+	})
+	c.key = key
+	c.db = db.NewMysqlDB(sqlServer)
+
+	return &c
+}
+
+func (c *Cache) AddUrl(originUrl, surl string) {
+	var record db.Record
+	record.Surl = surl
+	record.Url = url.QueryEscape(originUrl)
 	// 先检查有没有
-	res, err := clnt.HGet(key, surl).Result()
+	res, err := c.clnt.HGet(c.key, surl).Result()
 	// EOF错误是什么？
+	// 已解决：redis连接被服务器断开了，将服务器redis连接时间设置一下就好了
 	if err == nil {
 		// 已被缓存并且缓存的和参数相等
-		if res == url {
+		if res == originUrl {
 			return
 		}
 		// 已缓存的和url不等
-		err = db.AddRecord(url, surl)
-		if err != nil {
-			panic(err)
-		}
+		_ = c.db.AddRecord(record)
 	} else if err == redis.Nil {
-		clnt.HSet(key, surl, url)
-		// 数据库中可能有
-		_, err := db.GetRecord(surl)
-		if err == db.NO_RECORD {
-			// 插入
-			err = db.AddRecord(url, surl)
-			if err != nil {
-				panic(err)
-			}
-		}
+		c.clnt.HSet(c.key, record.Surl, record.Url)
+		// 数据库中可能有，可能没有，直接加入或者更新
+		_ = c.db.AddRecord(record)
 	} else {
+		// 其它未知错误
 		panic(err)
 	}
 }
 
 // 查找这个没办法goroutine省时间
-func GetRecord(surl string) (string, bool) {
-	res, err := clnt.HGet(key, surl).Result()
+func (c *Cache) GetUrl(surl string) (string, bool) {
+	res, err := c.clnt.HGet(c.key, surl).Result()
 	if err == nil {
+		res, _ = url.QueryUnescape(res)
 		return res, true
 	} else if err == redis.Nil {
 		// 查找数据库
-		db_url, err := db.GetRecord(surl)
+		record, err := c.db.GetRecord(surl)
 		if err == nil {
 			// 写入缓存
-			go AddRecord(db_url, surl)
-			return db_url, true
+			go c.AddUrl(record.Url, surl)
+			res, _ := url.QueryUnescape(record.Url)
+			return res, true
 		}
 	}
-
+	// 都没查找到
 	return "nil", false
 }
