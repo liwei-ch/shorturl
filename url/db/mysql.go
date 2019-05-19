@@ -15,6 +15,8 @@ func NewMysqlDB(sqlServer string) *MysqlDB {
 	if err != nil {
 		panic(err)
 	}
+	sqlDb.DB().SetMaxIdleConns(10)
+	sqlDb.DB().SetMaxOpenConns(100)
 	return &MysqlDB{db: sqlDb}
 }
 
@@ -40,7 +42,11 @@ func (m *MysqlDB) AddRecord(record Record) error {
 		return m.db.Save(&record).Error
 	} else if err == nil {
 		if rec.Url != record.Url {
-			m.db.Table(rec.TableName()).Where("surl = ?", record.Surl).Update("url", record.Url)
+			dbErr := m.db.Table(rec.TableName()).Where("surl = ?", record.Surl).Update("url", record.Url)
+			//defer dbErr.Close()
+			if dbErr.Error != nil {
+				panic(dbErr)
+			}
 		}
 	}
 	return nil
@@ -48,6 +54,8 @@ func (m *MysqlDB) AddRecord(record Record) error {
 
 func (m *MysqlDB) GetRecord(surl string) (record Record, err error) {
 	var dbErr = m.db.Where("surl = ?", surl).First(&record)
+	// 服务器连接数过多，莫非是这里没关？
+	//defer dbErr.Close()
 	if dbErr.Error != nil {
 		if dbErr.Error == gorm.ErrRecordNotFound {
 			err = NoRecord

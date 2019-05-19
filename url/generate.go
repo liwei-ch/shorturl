@@ -7,6 +7,7 @@ import (
 	"shorturl/url/cache"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -14,9 +15,15 @@ const (
 	_CHAR_LEN = len(_CHARS)
 )
 
+type pair struct {
+	url  string
+	surl string
+}
+
 type UrlServer struct {
 	c      *cache.Cache
 	prefix string
+	ch     chan pair
 }
 
 func NewUrlServer(redisAddr, redisPass, redisKey, sqlServer, prefix string, redisDbNum int) *UrlServer {
@@ -26,6 +33,13 @@ func NewUrlServer(redisAddr, redisPass, redisKey, sqlServer, prefix string, redi
 		prefix += "/"
 	}
 	server.prefix = prefix
+	server.ch = make(chan pair, 100)
+
+	for i := 0; i < 50; i++ {
+		// 启动goroutine
+		go server.addCache()
+	}
+
 	return &server
 }
 
@@ -43,10 +57,37 @@ func generate(url string) string {
 	return buf.String()
 }
 
+func (u *UrlServer) addCache() {
+	for {
+		p, ok := <-u.ch
+		if !ok {
+			return
+		}
+		u.c.AddUrl(p.url, p.surl)
+	}
+}
+
 func (u *UrlServer) GenerateUrl(url string) string {
-	str := generate(url)
-	//fmt.Println(str)
+	surl := generate(url)
+	//fmt.Println(surl)
 	// 放到goroutine中做
-	go u.c.AddUrl(url, str)
-	return u.prefix + str
+	// goroutine会导致效率下降
+	//go u.c.AddUrl(url, surl)
+	u.ch <- pair{url, surl}
+	return u.prefix + surl
+}
+
+func (u *UrlServer) Close() error {
+	for {
+		select {
+		case p, ok := <-u.ch:
+			if !ok {
+				break
+			}
+			u.c.AddUrl(p.surl, p.surl)
+		case <-time.After(10 * time.Second):
+			close(u.ch)
+			return nil
+		}
+	}
 }

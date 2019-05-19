@@ -36,7 +36,7 @@ func (c *Cache) AddUrl(originUrl, surl string) {
 	// 已解决：redis连接被服务器断开了，将服务器redis连接时间设置一下就好了
 	if err == nil {
 		// 已被缓存并且缓存的和参数相等
-		if res == originUrl {
+		if res == record.Url {
 			return
 		}
 		// 已缓存的和url不等
@@ -62,7 +62,8 @@ func (c *Cache) GetUrl(surl string) (string, bool) {
 		record, err := c.db.GetRecord(surl)
 		if err == nil {
 			// 写入缓存
-			go c.AddUrl(record.Url, surl)
+			//go c.AddUrl(record.Url, surl)
+			c.clnt.HSet(c.key, record.Surl, record.Url)
 			res, _ := url.QueryUnescape(record.Url)
 			return res, true
 		}
