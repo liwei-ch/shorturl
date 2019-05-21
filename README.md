@@ -26,7 +26,8 @@ will be redirected to url
 
 
 <pre><font color="#55FF55"><b>➜  </b></font><font color="#55FFFF"><b>shorturl</b></font> <font color="#5555FF"><b>git:(</b></font><font color="#FF5555"><b>master</b></font><font color="#5555FF"><b>) </b></font><font color="#FFFF55"><b>✗</b></font> curl -X POST rammiah.org:8080/generate -d &quot;https://www.baidu.com&quot;
-{&quot;surl&quot;:&quot;http://rammiah.org:8080/to/fiCEerXQ&quot;,&quot;url&quot;:&quot;https://www.baidu.com&quot;}<span style="background-color:#D3DAE3"><font color="#404552"><b>%</b></font></span>                                                                            <font color="#55FF55"><b>➜  </b></font><font color="#55FFFF"><b>shorturl</b></font> <font color="#5555FF"><b>git:(</b></font><font color="#FF5555"><b>master</b></font><font color="#5555FF"><b>) </b></font><font color="#FFFF55"><b>✗</b></font> curl http://rammiah.org:8080/to/fiCEerXQ
+{&quot;surl&quot;:&quot;http://rammiah.org:8080/to/fiCEerXQ&quot;,&quot;url&quot;:&quot;https://www.baidu.com&quot;}<span style="background-color:#D3DAE3"><font color="#404552"><b>%</b></font></span>                                               
+<font color="#55FF55"><b>➜  </b></font><font color="#55FFFF"><b>shorturl</b></font> <font color="#5555FF"><b>git:(</b></font><font color="#FF5555"><b>master</b></font><font color="#5555FF"><b>) </b></font><font color="#FFFF55"><b>✗</b></font> curl http://rammiah.org:8080/to/fiCEerXQ
 &lt;a href=&quot;https://www.baidu.com&quot;&gt;Moved Permanently&lt;/a&gt;.
 
 <font color="#55FF55"><b>➜  </b></font><font color="#55FFFF"><b>shorturl</b></font> <font color="#5555FF"><b>git:(</b></font><font color="#FF5555"><b>master</b></font><font color="#5555FF"><b>) </b></font><font color="#FFFF55"><b>✗</b></font> 
